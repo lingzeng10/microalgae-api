@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: microalgae-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: API_KEY
+        value: your-secure-api-key-here
+      - key: DATABASE_URL
+        value: sqlite:///./microalgae_data.db

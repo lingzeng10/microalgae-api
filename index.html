@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微藻養殖資料上傳系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .api-config {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .api-config h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .upload-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 60px 20px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: #e8f5e8;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .upload-subtext {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .progress-container {
+            margin: 30px 0;
+            display: none;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 25px;
+            background: #ecf0f1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .result {
+            margin: 30px 0;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: #856404;
+        }
+        
+        .instructions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .instructions li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .file-info {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .file-info h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .file-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .file-detail {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #d1ecf1;
+        }
+        
+        .file-detail strong {
+            color: #2c3e50;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .upload-area {
+                padding: 40px 15px;
+            }
+            
+            .upload-icon {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌱 微藻養殖資料上傳系統</h1>
+            <p>簡單、快速、安全的Excel資料收集平台</p>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h3>📋 使用說明</h3>
+                <ul>
+                    <li>支援 Excel 檔案格式（.xlsx, .xls）</li>
+                    <li>檔案大小建議不超過 10MB</li>
+                    <li>請確保檔案包含有效的資料</li>
+                    <li>上傳後系統會自動處理並儲存資料</li>
+                    <li>支援拖拽上傳，操作更便捷</li>
+                </ul>
+            </div>
+
+            <div class="api-config">
+                <h3>⚙️ API 設定</h3>
+                <div class="form-group">
+                    <label for="apiUrl">API 網址：</label>
+                    <input type="url" id="apiUrl" placeholder="https://your-api.onrender.com" value="http://localhost:8000">
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API 金鑰：</label>
+                    <input type="password" id="apiKey" placeholder="請輸入API金鑰" value="your-api-key-here">
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">拖拽Excel檔案到此處，或點擊選擇檔案</div>
+                    <div class="upload-subtext">支援 .xlsx 和 .xls 格式</div>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        選擇檔案
+                    </button>
+                </div>
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <h4>📄 檔案資訊</h4>
+                <div class="file-details" id="fileDetails"></div>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">準備上傳...</div>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 微藻養殖資料收集系統 | 
+            <a href="#" onclick="showApiDocs()">API 文件</a> | 
+            <a href="#" onclick="showStats()">統計資訊</a></p>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let selectedFile = null;
+        
+        // DOM 元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const result = document.getElementById('result');
+        const apiUrlInput = document.getElementById('apiUrl');
+        const apiKeyInput = document.getElementById('apiKey');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileDetails = document.getElementById('fileDetails');
+
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // 檔案選擇
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 處理檔案
+        function handleFile(file) {
+            selectedFile = file;
+            
+            // 檢查檔案類型
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showResult('❌ 請選擇Excel檔案（.xlsx 或 .xls）', 'error');
+                return;
+            }
+
+            // 檢查檔案大小（10MB限制）
+            if (file.size > 10 * 1024 * 1024) {
+                showResult('❌ 檔案大小不能超過10MB', 'error');
+                return;
+            }
+
+            // 顯示檔案資訊
+            showFileInfo(file);
+            
+            // 顯示上傳按鈕
+            showUploadButton();
+        }
+
+        // 顯示檔案資訊
+        function showFileInfo(file) {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            const lastModified = new Date(file.lastModified).toLocaleString('zh-TW');
+            
+            fileDetails.innerHTML = `
+                <div class="file-detail">
+                    <strong>檔案名稱：</strong><br>${file.name}
+                </div>
+                <div class="file-detail">
+                    <strong>檔案大小：</strong><br>${fileSize} MB
+                </div>
+                <div class="file-detail">
+                    <strong>檔案類型：</strong><br>${file.type || 'Excel檔案'}
+                </div>
+                <div class="file-detail">
+                    <strong>修改時間：</strong><br>${lastModified}
+                </div>
+            `;
+            
+            fileInfo.style.display = 'block';
+        }
+
+        // 顯示上傳按鈕
+        function showUploadButton() {
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn';
+            uploadBtn.innerHTML = '🚀 開始上傳';
+            uploadBtn.onclick = () => uploadFile(selectedFile);
+            
+            // 移除舊的上傳按鈕
+            const oldBtn = uploadArea.querySelector('.upload-btn');
+            if (oldBtn) oldBtn.remove();
+            
+            uploadBtn.classList.add('upload-btn');
+            uploadArea.appendChild(uploadBtn);
+        }
+
+        // 上傳檔案
+        function uploadFile(file) {
+            const apiUrl = apiUrlInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiUrl) {
+                showResult('❌ 請輸入API網址', 'error');
+                return;
+            }
+            
+            if (!apiKey) {
+                showResult('❌ 請輸入API金鑰', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            progressContainer.style.display = 'block';
+            result.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressText.textContent = '準備上傳...';
+
+            const xhr = new XMLHttpRequest();
+
+            // 上傳進度
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = `上傳中... ${Math.round(percentComplete)}%`;
+                }
+            });
+
+            // 上傳完成
+            xhr.addEventListener('load', () => {
+                progressContainer.style.display = 'none';
+                
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.status === 'success') {
+                            showResult(`
+                                <h4>✅ 上傳成功！</h4>
+                                <p><strong>📊 處理了 ${response.total_rows} 筆資料</strong></p>
+                                <p><strong>📁 檔案ID：</strong> ${response.file_id}</p>
+                                <p><strong>📋 工作表：</strong> ${response.sheets ? response.sheets.join(', ') : 'Sheet1'}</p>
+                                <p><strong>⏰ 上傳時間：</strong> ${new Date().toLocaleString('zh-TW')}</p>
+                            `, 'success');
+                        } else if (response.status === 'duplicate') {
+                            showResult(`
+                                <h4>⚠️ 檔案已存在</h4>
+                                <p>此檔案已經上傳過，檔案ID：${response.file_id}</p>
+                            `, 'info');
+                        } else {
+                            showResult(`❌ 上傳失敗：${response.message}`, 'error');
+                        }
+                    } catch (e) {
+                        showResult('❌ 回應格式錯誤', 'error');
+                    }
+                } else {
+                    showResult(`❌ 上傳失敗 (${xhr.status})：${xhr.responseText}`, 'error');
+                }
+            });
+
+            // 上傳錯誤
+            xhr.addEventListener('error', () => {
+                progressContainer.style.display = 'none';
+                showResult('❌ 網路錯誤，請檢查連線和API設定', 'error');
+            });
+
+            // 開始上傳
+            xhr.open('POST', `${apiUrl}/upload/`);
+            xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
+            xhr.send(formData);
+        }
+
+        // 顯示結果
+        function showResult(message, type) {
+            result.innerHTML = message;
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+        }
+
+        // 顯示API文件
+        function showApiDocs() {
+            const apiUrl = apiUrlInput.value.trim();
+            if (apiUrl) {
+                window.open(`${apiUrl}/docs`, '_blank');
+            } else {
+                alert('請先設定API網址');
+            }
+        }
+
+        // 顯示統計資訊
+        function showStats() {
+            const apiUrl = apiUrlInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiUrl || !apiKey) {
+                alert('請先設定API網址和金鑰');
+                return;
+            }
+            
+            fetch(`${apiUrl}/stats/`, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`📊 統計資訊\n\n總記錄數：${data.total_records}\n總檔案數：${data.total_files}`);
+            })
+            .catch(error => {
+                alert('❌ 無法取得統計資訊：' + error.message);
+            });
+        }
+
+        // 頁面載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 檢查是否為本地環境
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                apiUrlInput.value = 'http://localhost:8000';
+            }
+        });
+    </script>
+</body>
+</html>
