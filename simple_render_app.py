@@ -435,14 +435,27 @@ async def upload_excel(
             "data_preview": []
         }
         
-        # 嘗試使用pandas讀取Excel
+        # 嘗試使用pandas讀取Excel（更穩定的方式）
         try:
-            df = pd.read_excel(io.BytesIO(contents))
-            result.update({
-                "rows": len(df),
-                "columns": list(df.columns),
-                "data_preview": df.head().to_dict('records') if len(df) > 0 else []
-            })
+            # 使用更安全的pandas設定
+            df = pd.read_excel(
+                io.BytesIO(contents),
+                engine='openpyxl',  # 明確指定引擎
+                nrows=1000,  # 限制讀取行數
+                na_values=['', 'NULL', 'null', 'NaN', 'nan']  # 處理空值
+            )
+            
+            # 安全地處理數據
+            if df is not None and not df.empty:
+                result.update({
+                    "rows": len(df),
+                    "columns": [str(col) for col in df.columns],  # 確保列名是字串
+                    "data_preview": df.head(5).fillna('').to_dict('records')  # 限制預覽行數
+                })
+            else:
+                result["pandas_error"] = "Excel檔案為空或無法讀取"
+                result["message"] = "檔案上傳成功，但Excel內容為空"
+                
         except Exception as e:
             # 如果pandas處理失敗，保持基本資訊
             result["pandas_error"] = f"Excel解析失敗: {str(e)}"
