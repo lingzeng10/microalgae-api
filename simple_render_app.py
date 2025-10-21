@@ -5,6 +5,7 @@ Render部署用的簡化API
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 import pandas as pd
 import io
 import os
@@ -45,14 +46,332 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
     return credentials.credentials
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    """根路徑"""
-    return {
-        "message": "微藻養殖數據收集API",
-        "version": "1.0.0",
-        "status": "運行中"
-    }
+    """根路徑 - 顯示上傳介面"""
+    html_content = """
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微藻養殖數據上傳</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .api-key-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .api-key-section h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .api-key-section input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .file-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .file-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌱 微藻養殖數據上傳</h1>
+            <p>請上傳您的Excel檔案進行數據處理</p>
+        </div>
+        
+        <div class="api-key-section">
+            <h3>🔑 API金鑰設定</h3>
+            <input type="text" id="apiKey" placeholder="請輸入API金鑰" value="your-api-key-here">
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">點擊選擇檔案或拖拽檔案到此處</div>
+            <div class="upload-hint">支援 .xlsx 和 .xls 格式</div>
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+        </div>
+        
+        <button class="upload-btn" id="uploadBtn" disabled>上傳檔案</button>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const result = document.getElementById('result');
+        const apiKeyInput = document.getElementById('apiKey');
+        
+        let selectedFile = null;
+        
+        // 點擊上傳區域選擇檔案
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // 檔案選擇
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFile = e.target.files[0];
+                updateUploadArea();
+                uploadBtn.disabled = false;
+            }
+        });
+        
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                selectedFile = e.dataTransfer.files[0];
+                fileInput.files = e.dataTransfer.files;
+                updateUploadArea();
+                uploadBtn.disabled = false;
+            }
+        });
+        
+        // 更新上傳區域顯示
+        function updateUploadArea() {
+            if (selectedFile) {
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">✅</div>
+                    <div class="upload-text">已選擇檔案：${selectedFile.name}</div>
+                    <div class="upload-hint">點擊重新選擇</div>
+                `;
+            }
+        }
+        
+        // 上傳檔案
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showResult('請輸入API金鑰', 'error');
+                return;
+            }
+            
+            uploadBtn.disabled = true;
+            result.style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            try {
+                const response = await fetch('/upload-excel', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(data, 'success');
+                } else {
+                    const error = await response.json();
+                    showResult(`上傳失敗：${error.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                showResult(`上傳失敗：${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        });
+        
+        // 顯示結果
+        function showResult(data, type) {
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+            
+            if (type === 'success') {
+                result.innerHTML = `
+                    <h3>✅ 上傳成功！</h3>
+                    <div class="file-info">
+                        <h3>檔案資訊</h3>
+                        <p><strong>檔案名稱：</strong>${data.filename}</p>
+                        <p><strong>資料行數：</strong>${data.rows}</p>
+                        <p><strong>欄位數量：</strong>${data.columns.length}</p>
+                        <p><strong>欄位名稱：</strong>${data.columns.join(', ')}</p>
+                    </div>
+                    <div class="file-info">
+                        <h3>資料預覽</h3>
+                        <pre>${JSON.stringify(data.data_preview, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                result.innerHTML = `
+                    <h3>❌ 上傳失敗</h3>
+                    <p>${data}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
+    """
+    return HTMLResponse(content=html_content)
 
 @app.get("/health")
 async def health_check():
