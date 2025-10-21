@@ -1,21 +1,10 @@
-   fastapi>=0.100.0
-   uvicorn[standard]>=0.20.0
-   python-multipart>=0.0.5
-   pandas>=2.0.0
-   openpyxl>=3.0.0
-   xlrd>=2.0.0
-   python-jose[cryptography]>=3.3.0
-   passlib[bcrypt]>=1.7.4
-   python-dotenv>=1.0.0
-   sqlalchemy>=2.0.0
-   ```
-
-4. **提交變更**：
-   - 提交訊息：`Fix deployment issues - update requirements and add render_app.py`
-
-### 步驟2：修改Render設定
-
-1. **前往Render Dashboard**
-2. **點擊 "Settings" 標籤**
-3. **找到 "Build & Deploy" 部分**
-4. **修改 Start Command**：
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+python-multipart>=0.0.5
+pandas>=2.0.0
+openpyxl>=3.0.0
+xlrd>=2.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-dotenv>=1.0.0
+sqlalchemy>=2.0.0
