@@ -347,20 +347,46 @@ async def root():
             result.style.display = 'block';
             
             if (type === 'success') {
-                result.innerHTML = `
+                let content = `
                     <h3>✅ 上傳成功！</h3>
                     <div class="file-info">
                         <h3>檔案資訊</h3>
-                        <p><strong>檔案名稱：</strong>${data.filename}</p>
+                        <p><strong>檔案名稱：</strong>${data.filename || '未知'}</p>
+                        <p><strong>檔案大小：</strong>${data.file_size || '未知'} bytes</p>
+                        <p><strong>檔案類型：</strong>${data.file_type || 'Excel檔案'}</p>
+                        <p><strong>狀態：</strong>${data.status || '成功'}</p>
+                        <p><strong>訊息：</strong>${data.message || '檔案上傳成功'}</p>
+                `;
+                
+                // 如果有pandas數據，顯示詳細資訊
+                if (data.rows !== undefined && data.columns !== undefined) {
+                    content += `
                         <p><strong>資料行數：</strong>${data.rows}</p>
                         <p><strong>欄位數量：</strong>${data.columns.length}</p>
                         <p><strong>欄位名稱：</strong>${data.columns.join(', ')}</p>
-                    </div>
-                    <div class="file-info">
-                        <h3>資料預覽</h3>
-                        <pre>${JSON.stringify(data.data_preview, null, 2)}</pre>
-                    </div>
-                `;
+                    `;
+                }
+                
+                // 如果有pandas錯誤，顯示錯誤
+                if (data.pandas_error) {
+                    content += `
+                        <p><strong>Excel解析錯誤：</strong>${data.pandas_error}</p>
+                    `;
+                }
+                
+                content += `</div>`;
+                
+                // 如果有數據預覽，顯示預覽
+                if (data.data_preview && data.data_preview.length > 0) {
+                    content += `
+                        <div class="file-info">
+                            <h3>資料預覽</h3>
+                            <pre>${JSON.stringify(data.data_preview, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+                result.innerHTML = content;
             } else {
                 result.innerHTML = `
                     <h3>❌ 上傳失敗</h3>
@@ -396,15 +422,31 @@ async def upload_excel(
         # 讀取檔案內容
         contents = await file.read()
         
-        # 返回基本檔案資訊（不使用pandas）
+        # 返回完整檔案資訊（包含pandas處理）
         result = {
             "filename": file.filename,
             "file_size": len(contents),
             "message": "檔案上傳成功！",
             "status": "success",
             "upload_time": "2024-01-01 12:00:00",
-            "file_type": "Excel檔案"
+            "file_type": "Excel檔案",
+            "rows": 0,
+            "columns": [],
+            "data_preview": []
         }
+        
+        # 嘗試使用pandas讀取Excel
+        try:
+            df = pd.read_excel(io.BytesIO(contents))
+            result.update({
+                "rows": len(df),
+                "columns": list(df.columns),
+                "data_preview": df.head().to_dict('records') if len(df) > 0 else []
+            })
+        except Exception as e:
+            # 如果pandas處理失敗，保持基本資訊
+            result["pandas_error"] = f"Excel解析失敗: {str(e)}"
+            result["message"] = "檔案上傳成功，但Excel解析失敗"
         
         logger.info(f"成功處理檔案: {file.filename}, 大小: {len(contents)} bytes")
         return result
