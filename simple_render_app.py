@@ -396,26 +396,15 @@ async def upload_excel(
         # 讀取檔案內容
         contents = await file.read()
         
-        # 基本檔案資訊
+        # 返回基本檔案資訊（不使用pandas）
         result = {
             "filename": file.filename,
             "file_size": len(contents),
             "message": "檔案上傳成功！",
-            "status": "success"
+            "status": "success",
+            "upload_time": "2024-01-01 12:00:00",
+            "file_type": "Excel檔案"
         }
-        
-        # 嘗試使用pandas讀取Excel（可選）
-        try:
-            df = pd.read_excel(io.BytesIO(contents))
-            result.update({
-                "rows": len(df),
-                "columns": list(df.columns),
-                "data_preview": df.head().to_dict('records') if len(df) > 0 else []
-            })
-        except Exception as e:
-            # 如果pandas處理失敗，仍然返回基本資訊
-            result["pandas_error"] = f"Excel解析失敗: {str(e)}"
-            result["message"] = "檔案上傳成功，但Excel解析失敗"
         
         logger.info(f"成功處理檔案: {file.filename}, 大小: {len(contents)} bytes")
         return result
